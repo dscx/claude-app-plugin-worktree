@@ -33,7 +33,7 @@ wt_session_start_main() {
 			printf '%s\n' 'MODE=inline'
 			printf '%s\n' 'PLACE=bottom'
 			printf '%s\n' 'MARK=orange'
-			printf '%s\n' 'STYLE=plain'
+			printf '%s\n' 'STYLE=diff-add'
 			printf '%s\n' 'FORMAT=full'
 			printf '%s\n' 'SHOW_BRANCH=1'
 			printf '%s\n' 'ROOT=1'

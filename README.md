@@ -81,7 +81,7 @@ By default that is `~/.claude/claude-worktree/config.env`, written on first run.
 | `MODE` | `inline`, `off` | `inline` | `off` disables the tag entirely without uninstalling the plugin. |
 | `PLACE` | `bottom`, `top` | `bottom` | Which end of the reply the tag goes on. |
 | `MARK` | `orange`, `yellow`, `red`, `green`, `blue`, `purple`, `brown`, `white`, `black`, `warn`, `option`, `none` | `orange` | The leading glyph — see [Changing the colour](#changing-the-colour). |
-| `STYLE` | `plain`, `code` | `plain` | `code` wraps the tag in an inline code span, which colours the **text** — but only on clients that paint markdown. See below. |
+| `STYLE` | `diff-add`, `diff-del`, `diff-warn`, `code`, `plain` | `diff-add` | How the tag is wrapped, which is the only lever on **text** colour. See [Colour](#colour-and-which-client-you-read-on). |
 | `FORMAT` | `full`, `short` | `full` | `full` is `🟠 repo ▸ worktree · branch`; `short` is just `🟠 worktree`. |
 | `SHOW_BRANCH` | `1`, `0` | `1` | Include the branch. Worth turning off when your worktree names already encode the branch. |
 | `ROOT` | `1`, `0` | `1` | Tag the main checkout too. Set `0` and the tag appears **only** when you are in a linked worktree, so its presence is itself the signal. |
@@ -111,6 +111,7 @@ is a repository called `atlas` with a linked worktree `search-rewrite` on branch
 | `MARK=option` | ⌥ atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=none` | atlas ▸ search-rewrite · worktree-search-rewrite |
 | `STYLE=code` | `🟠 atlas ▸ search-rewrite · worktree-search-rewrite` |
+| `STYLE=plain` | 🟠 atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MODE=off` | *(nothing)* |
 
 **In the main checkout:**
@@ -155,12 +156,29 @@ a different matter: it depends on the client. Measured on the same message —
 | inline code span (`STYLE=code`) | **coloured** | no colour |
 | inline HTML (`<span style>`) | stripped | stripped |
 
-So `STYLE=code` is worth turning on if you read on the desktop app, and buys nothing if you
-read on mobile — where it still costs you a monospace pill. It stays a single inline line on
-both, which is why it uses an inline code span rather than a fenced block: a fence would
-colour more strongly on desktop and put a grey box around your footer on mobile.
+Markdown has no colour of its own, so **the construct picks the colour and the theme paints
+it.** `STYLE` chooses the construct:
 
-There is no way to choose *which* colour. You pick the construct; the theme paints it.
+| `STYLE` | Renders as | Colour | Shape |
+| --- | --- | --- | --- |
+| `diff-add` *(default)* | ` ```diff ` block, `+` prefix | the theme's *added* colour | block, 3 lines |
+| `diff-del` | ` ```diff ` block, `-` prefix | the theme's *removed* colour | block, 3 lines |
+| `diff-warn` | ` ```diff ` block, `!` prefix | the theme's *changed* colour | block, 3 lines |
+| `code` | inline code span | the theme's inline-code colour | inline, 1 line |
+| `plain` | bare text | none | inline, 1 line |
+
+The `diff-*` styles are the only way to **choose** among colours, because a diff highlighter
+colours a line by its prefix. That is why one of them is the default.
+
+Two costs to weigh, and they fall on different readers. A fenced block is a block on *every*
+client, so your one-line footer becomes a boxed three-line region — and on a client that
+does not highlight, you pay the box and get no colour at all. And a `+` prefix reads as
+*added* and `-` as *removed*, which is diff vocabulary being borrowed for a status line; if
+that mismatch bothers you, `diff-warn` carries less meaning, and `code` or `plain` carry
+none.
+
+The glyph is unaffected by all of this. `MARK` is coloured by the font, so it survives on
+every client regardless of `STYLE` — which is why the plugin still leads with it.
 
 ### Preview it without starting a session
 

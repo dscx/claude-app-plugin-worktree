@@ -65,11 +65,18 @@ Two conclusions follow, and they set the defaults:
    `STYLE=plain` is the default style. A reader on mobile still gets a coloured marker.
 2. **`STYLE=code` is opt-in**, and it buys colour only on clients that paint markdown.
 
-`STYLE=code` uses an inline code span rather than a fenced ` ```diff ` block, even though a
-fence colours more strongly. A fence is a block element: it wraps a one-line footer in a
-box, on every client. On desktop you would at least be paying that for colour; on mobile you
-would pay it and get nothing. An inline code span stays a single inline line everywhere and
-degrades to a monospace pill, which is a much cheaper failure.
+`STYLE` exposes both shapes, because they are a genuine trade rather than a right answer:
+
+- `code` is an inline code span. One line on every client, coloured on those that highlight,
+  degrading to a monospace pill on those that do not. Cheap failure, no colour choice.
+- `diff-add` / `diff-del` / `diff-warn` emit a real fenced block. This is the **only** route
+  to choosing a colour, because a diff highlighter colours a line by its prefix and nothing
+  else in markdown lets an author steer a colour at all. The cost is a block on every
+  client, and on one that does not highlight you pay the box for nothing.
+
+`diff-add` is the default because being able to pick the colour was the thing actually
+asked for, and the block was accepted knowingly. Do not quietly revert it to an inline style
+to save the box — that decision was made with the cost stated.
 
 The wider trap this whole exercise is a monument to: **a rendering result is a property of a
 client, not of "markdown".** Round one tested one client and concluded something about the

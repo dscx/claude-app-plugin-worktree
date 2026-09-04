@@ -34,6 +34,8 @@ WT_G3='"con''tinue"'
 # MARK setting, resolved in wt_init.
 WT_SEP='▸'
 WT_DOT='·'
+WT_TICK='`'
+WT_FENCE='```'
 
 # Markdown has no colour, and the desktop app's renderer sanitises HTML, so a
 # coloured *glyph* is the only colour that is guaranteed to survive. These are
@@ -63,7 +65,7 @@ wt_mark_glyph() {
 # ---------------------------------------------------------------------------
 wt_load_config() {
 	# Strict allowlist. Not a parser: each accepted line must match one of the
-	# twenty-five legal KEY=value pairs exactly. Anything else — unknown keys, shell
+	# twenty-eight legal KEY=value pairs exactly. Anything else — unknown keys, shell
 	# metacharacters, command substitution, a key with an illegal value — falls
 	# through to the ignore branch. There is no eval and no sourcing.
 	#
@@ -95,7 +97,7 @@ wt_load_config() {
 					PLACE=${_cfg_ln#PLACE=} ;;
 				MARK=orange|MARK=yellow|MARK=red|MARK=green|MARK=blue|MARK=purple|MARK=brown|MARK=white|MARK=black|MARK=warn|MARK=option|MARK=none)
 					MARK=${_cfg_ln#MARK=} ;;
-				STYLE=plain|STYLE=code)
+				STYLE=plain|STYLE=code|STYLE=diff-add|STYLE=diff-del|STYLE=diff-warn)
 					STYLE=${_cfg_ln#STYLE=} ;;
 				*)
 					: ;;
@@ -113,7 +115,7 @@ wt_init() {
 	ROOT=1
 	PLACE=bottom
 	MARK=orange
-	STYLE=plain
+	STYLE=diff-add
 	STATE_DIR="${CLAUDE_WORKTREE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-worktree}"
 	SESS_DIR="$STATE_DIR/sessions"
 	WT_CONFIG="$STATE_DIR/config.env"
@@ -364,7 +366,7 @@ wt_replace() {
 wt_escape() {
 	wt_replace "$1" "$WT_BS" "$WT_BS$WT_BS"
 	wt_replace "$RP" "$WT_Q" "$WT_BS$WT_Q"
-	wt_replace "$RP" "$WT_NL" ' '
+	wt_replace "$RP" "$WT_NL" '\n'
 	wt_replace "$RP" "$WT_CR" ' '
 	wt_replace "$RP" "$WT_TAB" ' '
 	JE=$RP
@@ -727,12 +729,25 @@ wt_tag() {
 		TAG="$_tg_body"
 	fi
 
-	# STYLE=code wraps the line in an inline code span. That is the only way to
-	# get coloured *text*, and it only works on some clients — see DESIGN.md.
-	# It stays a single inline line everywhere, which is why a fenced block was
-	# not chosen despite colouring more strongly.
-	if [ "$STYLE" = code ]; then
-		TAG="\`$TAG\`"
-	fi
+	# STYLE decides how the line is wrapped, which is the only lever on text
+	# colour: markdown has no colour of its own, so the construct picks it and
+	# the theme paints it. See DESIGN.md for what renders where.
+	#
+	# The diff-* styles emit a real fenced block, three lines, because that is
+	# what a diff highlighter needs in order to colour a line by its prefix.
+	# They are the only route to *choosing* among colours; the cost is a block
+	# on every client, and no colour at all on one that does not highlight.
+	case "$STYLE" in
+		code)
+			TAG="$WT_TICK$TAG$WT_TICK" ;;
+		diff-add)
+			TAG="${WT_FENCE}diff${WT_NL}+ ${TAG}${WT_NL}${WT_FENCE}" ;;
+		diff-del)
+			TAG="${WT_FENCE}diff${WT_NL}- ${TAG}${WT_NL}${WT_FENCE}" ;;
+		diff-warn)
+			TAG="${WT_FENCE}diff${WT_NL}! ${TAG}${WT_NL}${WT_FENCE}" ;;
+		*)
+			: ;;
+	esac
 	return 0
 }

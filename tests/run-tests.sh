@@ -107,7 +107,8 @@ tag_of() { # full hook output -> just the tag
   # PLACE=bottom, so both endings have to be trimmed here.
   printf '%s' "$1" | sed -e 's/^.*working tree is: //' \
                          -e 's/\. Begin your reply.*$//' \
-                         -e 's/\. End your reply.*$//'
+                         -e 's/\. End your reply.*$//' \
+                         -e 's/\. Begin your reply.*$//'
 }
 write_config() {
   printf '%s\n' "$@" > "$STATE/config.env"
@@ -143,7 +144,7 @@ group 'tag shapes'
 if [ "$HAVE_GIT" = 0 ]; then
   skip 'git is unavailable or the fixture repository could not be built'
 else
-  reset_state
+  reset_state; write_config 'STYLE=plain'
 
   out=$(run_ups "$WTDIR" s1)
   assert_has 'linked worktree emits a tag' "$out" 'working tree is:'
@@ -151,15 +152,18 @@ else
   assert_has 'output names the hook event' "$out" '"hookEventName":"UserPromptSubmit"'
   assert_has 'output uses additionalContext' "$out" '"additionalContext"'
 
+  write_config 'STYLE=plain'
   out=$(run_ups "$REPO" s2)
   assert_eq  'main checkout tag' "$(tag_of "$out")" '🟠 widget ▸ main (root)'
 
+  write_config 'STYLE=plain'
   out=$(run_ups "$REPO/.claude" s2b)
   assert_eq  'subdirectory resolves to its worktree' "$(tag_of "$out")" '🟠 widget ▸ main (root)'
 
   # Detached HEAD in the linked worktree.
   ( cd "$WTDIR" && git checkout -q --detach ) >/dev/null 2>&1
   sha=$( cd "$WTDIR" && git rev-parse --short=7 HEAD 2>/dev/null )
+  write_config 'STYLE=plain'
   out=$(run_ups "$WTDIR" s3)
   assert_eq  'detached HEAD is shortened' "$(tag_of "$out")" "🟠 widget ▸ feature-x · detached@$sha"
   ( cd "$WTDIR" && git checkout -q feature-branch ) >/dev/null 2>&1
@@ -177,20 +181,21 @@ else
   reset_state; write_config 'MODE=off'
   assert_empty 'MODE=off says nothing' "$(run_ups "$WTDIR" c1)"
 
-  reset_state; write_config 'FORMAT=short'
+  reset_state; write_config 'FORMAT=short' 'STYLE=plain'
   assert_eq 'FORMAT=short, linked' "$(tag_of "$(run_ups "$WTDIR" c2)")" '🟠 feature-x'
+  write_config 'FORMAT=short' 'STYLE=plain'
   assert_eq 'FORMAT=short, root'   "$(tag_of "$(run_ups "$REPO" c3)")"  '🟠 widget (root)'
 
-  reset_state; write_config 'SHOW_BRANCH=0'
+  reset_state; write_config 'SHOW_BRANCH=0' 'STYLE=plain'
   assert_eq 'SHOW_BRANCH=0 drops the branch' "$(tag_of "$(run_ups "$WTDIR" c4)")" '🟠 widget ▸ feature-x'
 
   # PLACE decides which end of the reply the model is asked to put the tag on.
-  reset_state
+  reset_state; write_config 'STYLE=plain'
   out=$(run_ups "$WTDIR" p1)
   assert_has 'PLACE defaults to the bottom' "$out" 'End your reply with exactly that line, on its own final line'
   assert_lacks 'and does not also ask for the top' "$out" 'Begin your reply'
 
-  reset_state; write_config 'PLACE=top'
+  reset_state; write_config 'PLACE=top' 'STYLE=plain'
   out=$(run_ups "$WTDIR" p2)
   assert_has 'PLACE=top asks for the first line' "$out" 'Begin your reply with exactly that line, on its own first line'
   assert_lacks 'and not the last' "$out" 'End your reply'
@@ -210,7 +215,7 @@ else
   assert_has 'MARK=option' "$(tag_of "$(run_ups "$WTDIR" m2)")" '⌥'
   reset_state; write_config 'MARK=warn'
   assert_has 'MARK=warn' "$(tag_of "$(run_ups "$WTDIR" m3)")" '⚠️'
-  reset_state; write_config 'MARK=none'
+  reset_state; write_config 'MARK=none' 'STYLE=plain'
   assert_eq 'MARK=none leaves no leading glyph or space' "$(tag_of "$(run_ups "$WTDIR" m4)")" 'widget ▸ feature-x · feature-branch'
   # Deliberately not a colour name, so adding real colours can never make this
   # fixture valid again — which is exactly what happened when it said 'purple'.
@@ -219,14 +224,25 @@ else
 
   # STYLE=code wraps the tag in an inline code span. It is the only route to
   # coloured text, and only on clients that paint markdown — see DESIGN.md.
+  # The default is now a diff fence: it is the only construct that lets the
+  # colour be chosen rather than inherited, at the cost of being a block.
   reset_state
-  assert_lacks 'STYLE defaults to plain (no backticks)' "$(tag_of "$(run_ups "$WTDIR" y0)")" '`'
+  out=$(tag_of "$(run_ups "$WTDIR" y0)")
+  assert_has 'STYLE defaults to a diff fence' "$out" '```diff'
+  assert_has 'the default uses the + prefix' "$out" '+ 🟠 widget'
+  assert_has 'and closes the fence' "$out" '```'
+  reset_state; write_config 'STYLE=diff-del'
+  assert_has 'STYLE=diff-del uses the - prefix' "$(tag_of "$(run_ups "$WTDIR" y0b)")" '- 🟠 widget'
+  reset_state; write_config 'STYLE=diff-warn'
+  assert_has 'STYLE=diff-warn uses the ! prefix' "$(tag_of "$(run_ups "$WTDIR" y0c)")" '! 🟠 widget'
+  reset_state; write_config 'STYLE=plain'
+  assert_lacks 'STYLE=plain has no backtick at all' "$(tag_of "$(run_ups "$WTDIR" y0d)")" '`'
   reset_state; write_config 'STYLE=code'
   assert_eq 'STYLE=code wraps the whole tag' "$(tag_of "$(run_ups "$WTDIR" y1)")" '`🟠 widget ▸ feature-x · feature-branch`'
   reset_state; write_config 'STYLE=code' 'MARK=none'
   assert_eq 'STYLE=code with no glyph' "$(tag_of "$(run_ups "$WTDIR" y2)")" '`widget ▸ feature-x · feature-branch`'
   reset_state; write_config 'STYLE=bogus'
-  assert_lacks 'an unknown STYLE falls back to plain' "$(tag_of "$(run_ups "$WTDIR" y3)")" '`'
+  assert_has 'an unknown STYLE falls back to the default' "$(tag_of "$(run_ups "$WTDIR" y3)")" '```diff'
   # A backtick in the payload must not break the JSON.
   reset_state; write_config 'STYLE=code'
   out=$(run_ups "$WTDIR" y4)

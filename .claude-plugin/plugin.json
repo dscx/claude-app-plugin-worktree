@@ -1,6 +1,6 @@
 {
   "name": "claude-worktree",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Names the git worktree a Claude Code session is in: a one-line tag at the top of every reply, so a conversation always says which tree it is changing.",
   "author": {
     "name": "Dan Chamberlain",
