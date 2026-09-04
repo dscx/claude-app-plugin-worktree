@@ -7,15 +7,17 @@ the only way to tell them apart is to ask.
 
 This plugin puts the answer on the last line of every reply:
 
-```
-🟠 atlas ▸ search-rewrite · worktree-search-rewrite
-```
+![The last line of a Claude Code reply, rendered as a green diff block reading "+ 🟠 atlas ▸ search-rewrite · worktree-search-rewrite" — repository, worktree, and branch](docs/example.png)
 
 Repository, worktree, branch. In the main checkout it says so instead:
 
+```diff
++ 🟠 atlas ▸ main (root)
 ```
-🟠 atlas ▸ main (root)
-```
+
+That is the default `STYLE=diff-add`, which is the only construct markdown offers that lets
+the text colour be chosen. `STYLE=code` gives a single inline line instead, and `plain`
+gives bare text — see [Colour](#colour-and-which-client-you-read-on) for what renders where.
 
 ## Install
 
