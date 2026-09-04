@@ -31,8 +31,10 @@ in the terminal, you do not need this plugin; configure `statusLine` and read
 `MARK` picks between 🟠, 🟡, ⚠️, ⌥ and nothing. It does not pick a colour, because there is
 no colour to pick.
 
-This was measured rather than assumed. Rendering all four candidates side by side in a
-desktop-app assistant message on 2026-09-04, only the glyph came out coloured:
+This was measured rather than assumed, twice, on 2026-09-04, by rendering candidates in a
+desktop-app assistant message and reading the result off the screen.
+
+**Round one — author-supplied HTML.** All stripped:
 
 | Candidate | Result |
 | --- | --- |
@@ -42,6 +44,26 @@ desktop-app assistant message on 2026-09-04, only the glyph came out coloured:
 | 🟠 | renders orange |
 
 The app carries `sanitizeHtml` with a tag allowlist, and inline style does not survive it.
+
+**Round two — markdown-native colour.** Round one only proved that *our* markup is removed,
+not that the renderer paints nothing. The app bundles **Shiki**, which colours code by
+emitting inline styles of its own, downstream of the sanitiser — so it was reasonable to
+expect a fenced block or an inline code span to arrive coloured. Every one of these came
+back with no colour on the text at all:
+
+| Candidate | Result |
+| --- | --- |
+| inline code span | no colour |
+| ` ```diff ` with a `-` line | no colour |
+| ` ```diff ` with a `+` line | no colour |
+| ` ```diff ` with a `!` line | no colour |
+| link | no colour |
+| blockquote | no colour |
+
+Shiki being in the bundle does not mean it runs on assistant message text in the Code tab.
+Do not reason from a library's presence to its use on a given surface — that was the wrong
+inference the second round existed to check.
+
 ANSI escapes are a terminal mechanism and would render as literal noise. So the colour has
 to live in the font, which is what a coloured glyph is — and it degrades honestly, since a
 terminal without emoji fonts shows a box rather than a broken escape sequence. `MARK=option`
