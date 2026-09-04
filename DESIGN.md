@@ -143,14 +143,21 @@ This plugin uses `UserPromptSubmit` and `SessionStart` only. Both are documented
 supported everywhere, so there is nothing to quarantine. If you ever add an undocumented
 event here, give it its own file — and read that plugin's DESIGN.md first.
 
-There is a second reason not to name `hooks/hooks.json` in `plugin.json`, and it is not
-optional: **the CLI loads `hooks/hooks.json` automatically**, and a manifest that also
-references it is rejected — "Duplicate hooks file detected", and the plugin's status
-becomes "failed to load". The `hooks` array is for *additional* hook files only, so a
-plugin with exactly one hooks file must omit the key entirely. Verified on CLI 2.1.239 and
-on the CLI bundled in the desktop app, both of which carry the check. `claude plugin list`
-is where this shows up; `claude plugin validate --strict` passes either way, so validation
-is not enough on its own.
+There is a second reason not to name `hooks/hooks.json` in `plugin.json`: **the CLI loads
+`hooks/hooks.json` automatically**, and a manifest that also references it is rejected —
+"Duplicate hooks file detected", and the plugin's status becomes "failed to load". The
+`hooks` array is for *additional* hook files only, so a plugin with exactly one hooks file
+omits the key entirely. Verified on CLI 2.1.239 and on the CLI bundled in the desktop app,
+both of which carry the check.
+
+That error is louder than its consequences. Measured on 2026-09-04 against the sibling
+`claude-timestamps` plugin, hooks in a "failed to load" plugin still fired normally — both
+the auto-loaded file and the manifest-referenced one — and its slash command stayed
+available. So this is a correctness and hygiene fix, not an outage: do not diagnose a
+silent plugin by assuming this error caused it.
+
+`claude plugin list` is the only place it shows up; `claude plugin validate --strict`
+passes either way, so validation is not enough on its own.
 
 ## Why the payload is shrunk before it is parsed
 
