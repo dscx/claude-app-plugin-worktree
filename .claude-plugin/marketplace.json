@@ -1,0 +1,25 @@
+{
+  "name": "claude-worktree",
+  "owner": {
+    "name": "Dan Chamberlain",
+    "email": "dnchmbrln@gmail.com",
+    "url": "https://github.com/dscx"
+  },
+  "description": "Single-plugin marketplace for claude-worktree.",
+  "plugins": [
+    {
+      "name": "claude-worktree",
+      "source": "./",
+      "description": "Names the git worktree a Claude Code session is in: a one-line tag at the top of every reply, so a conversation always says which tree it is changing.",
+      "category": "productivity",
+      "keywords": [
+        "worktree",
+        "git",
+        "hooks",
+        "branch",
+        "context",
+        "session"
+      ]
+    }
+  ]
+}

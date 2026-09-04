@@ -1,0 +1,27 @@
+{
+  "description": "claude-worktree: names the git worktree a session is in. UserPromptSubmit resolves it and asks the model to open its reply with the tag; SessionStart prepares state, primes the cache and expires old entries. Both events are documented and supported by every Claude Code version, so a single hooks file is safe here — an unrecognised event key would disable every hook in the file that contains it.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
