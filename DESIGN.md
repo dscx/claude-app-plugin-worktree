@@ -28,11 +28,26 @@ in the terminal, you do not need this plugin; configure `statusLine` and read
 
 ## Why the colour is a glyph
 
-`MARK` picks between 🟠, 🟡, ⚠️, ⌥ and nothing. It does not pick a colour, because there
-is no colour to pick: the tag is markdown in an assistant message, markdown has no colour,
-and the desktop app runs the rendered output through `sanitizeHtml` with a tag allowlist,
-so an inline `<span style>` is not something to rely on. ANSI escapes are a terminal
-mechanism and render as literal noise in the app.
+`MARK` picks between 🟠, 🟡, ⚠️, ⌥ and nothing. It does not pick a colour, because there is
+no colour to pick.
+
+This was measured rather than assumed. Rendering all four candidates side by side in a
+desktop-app assistant message on 2026-09-04, only the glyph came out coloured:
+
+| Candidate | Result |
+| --- | --- |
+| `<span style="color:orange">` | stripped |
+| `<span style="color:#f59e0b">` | stripped |
+| `<font color="orange">` | stripped |
+| 🟠 | renders orange |
+
+The app carries `sanitizeHtml` with a tag allowlist, and inline style does not survive it.
+ANSI escapes are a terminal mechanism and would render as literal noise. So the colour has
+to live in the font, which is what a coloured glyph is — and it degrades honestly, since a
+terminal without emoji fonts shows a box rather than a broken escape sequence. `MARK=option`
+exists for exactly that case.
+
+Do not add a `COLOR` setting. There is nothing for it to set.
 
 A coloured glyph is the one thing guaranteed to survive, because the colour is in the font
 rather than in any markup. It also degrades honestly: in a terminal without emoji fonts it
