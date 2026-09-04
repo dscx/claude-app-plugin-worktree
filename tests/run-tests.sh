@@ -211,6 +211,29 @@ else
   reset_state; write_config 'MARK=purple'
   assert_has 'an unknown MARK falls back to the default' "$(tag_of "$(run_ups "$WTDIR" m5)")" '🟠'
 
+  # STYLE=code wraps the tag in an inline code span. It is the only route to
+  # coloured text, and only on clients that paint markdown — see DESIGN.md.
+  reset_state
+  assert_lacks 'STYLE defaults to plain (no backticks)' "$(tag_of "$(run_ups "$WTDIR" y0)")" '`'
+  reset_state; write_config 'STYLE=code'
+  assert_eq 'STYLE=code wraps the whole tag' "$(tag_of "$(run_ups "$WTDIR" y1)")" '`🟠 widget ▸ feature-x · feature-branch`'
+  reset_state; write_config 'STYLE=code' 'MARK=none'
+  assert_eq 'STYLE=code with no glyph' "$(tag_of "$(run_ups "$WTDIR" y2)")" '`widget ▸ feature-x · feature-branch`'
+  reset_state; write_config 'STYLE=bogus'
+  assert_lacks 'an unknown STYLE falls back to plain' "$(tag_of "$(run_ups "$WTDIR" y3)")" '`'
+  # A backtick in the payload must not break the JSON.
+  reset_state; write_config 'STYLE=code'
+  out=$(run_ups "$WTDIR" y4)
+  if command -v node >/dev/null 2>&1; then
+    if printf '%s' "$out" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{JSON.parse(s)})' 2>/dev/null; then
+      ok 'backticks stay valid JSON'
+    else
+      bad 'backticks stay valid JSON' "$out"
+    fi
+  else
+    skip 'node unavailable to validate the JSON'
+  fi
+
   reset_state; write_config 'ROOT=0'
   assert_empty 'ROOT=0 is silent in the main checkout' "$(run_ups "$REPO" c5)"
   assert_has   'ROOT=0 still tags a worktree' "$(run_ups "$WTDIR" c6)" 'feature-x'

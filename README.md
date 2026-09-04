@@ -81,6 +81,7 @@ By default that is `~/.claude/claude-worktree/config.env`, written on first run.
 | `MODE` | `inline`, `off` | `inline` | `off` disables the tag entirely without uninstalling the plugin. |
 | `PLACE` | `bottom`, `top` | `bottom` | Which end of the reply the tag goes on. |
 | `MARK` | `orange`, `yellow`, `warn`, `option`, `none` | `orange` | The leading glyph: 🟠, 🟡, ⚠️, ⌥, or none at all. |
+| `STYLE` | `plain`, `code` | `plain` | `code` wraps the tag in an inline code span, which colours the **text** — but only on clients that paint markdown. See below. |
 | `FORMAT` | `full`, `short` | `full` | `full` is `🟠 repo ▸ worktree · branch`; `short` is just `🟠 worktree`. |
 | `SHOW_BRANCH` | `1`, `0` | `1` | Include the branch. Worth turning off when your worktree names already encode the branch. |
 | `ROOT` | `1`, `0` | `1` | Tag the main checkout too. Set `0` and the tag appears **only** when you are in a linked worktree, so its presence is itself the signal. |
@@ -107,6 +108,7 @@ is a repository called `atlas` with a linked worktree `search-rewrite` on branch
 | `MARK=warn` | ⚠️ atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=option` | ⌥ atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=none` | atlas ▸ search-rewrite · worktree-search-rewrite |
+| `STYLE=code` | `🟠 atlas ▸ search-rewrite · worktree-search-rewrite` |
 | `MODE=off` | *(nothing)* |
 
 **In the main checkout:**
@@ -119,6 +121,24 @@ is a repository called `atlas` with a linked worktree `search-rewrite` on branch
 | `ROOT=0` | *(nothing)* |
 
 `PLACE` does not change the text, only which end of the reply it lands on.
+
+### Colour, and which client you read on
+
+The glyph is coloured everywhere, because its colour comes from the font. Coloured *text* is
+a different matter: it depends on the client. Measured on the same message —
+
+| | Desktop app | Mobile |
+| --- | --- | --- |
+| 🟠 glyph (`MARK`) | orange | orange |
+| inline code span (`STYLE=code`) | **coloured** | no colour |
+| inline HTML (`<span style>`) | stripped | stripped |
+
+So `STYLE=code` is worth turning on if you read on the desktop app, and buys nothing if you
+read on mobile — where it still costs you a monospace pill. It stays a single inline line on
+both, which is why it uses an inline code span rather than a fenced block: a fence would
+colour more strongly on desktop and put a grey box around your footer on mobile.
+
+There is no way to choose *which* colour. You pick the construct; the theme paints it.
 
 ### Preview it without starting a session
 

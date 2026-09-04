@@ -56,7 +56,7 @@ wt_mark_glyph() {
 # ---------------------------------------------------------------------------
 wt_load_config() {
 	# Strict allowlist. Not a parser: each accepted line must match one of the
-	# fifteen legal KEY=value pairs exactly. Anything else — unknown keys, shell
+	# seventeen legal KEY=value pairs exactly. Anything else — unknown keys, shell
 	# metacharacters, command substitution, a key with an illegal value — falls
 	# through to the ignore branch. There is no eval and no sourcing.
 	#
@@ -88,6 +88,8 @@ wt_load_config() {
 					PLACE=${_cfg_ln#PLACE=} ;;
 				MARK=orange|MARK=yellow|MARK=warn|MARK=option|MARK=none)
 					MARK=${_cfg_ln#MARK=} ;;
+				STYLE=plain|STYLE=code)
+					STYLE=${_cfg_ln#STYLE=} ;;
 				*)
 					: ;;
 			esac
@@ -104,6 +106,7 @@ wt_init() {
 	ROOT=1
 	PLACE=bottom
 	MARK=orange
+	STYLE=plain
 	STATE_DIR="${CLAUDE_WORKTREE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-worktree}"
 	SESS_DIR="$STATE_DIR/sessions"
 	WT_CONFIG="$STATE_DIR/config.env"
@@ -715,6 +718,14 @@ wt_tag() {
 		TAG="$WT_MARK $_tg_body"
 	else
 		TAG="$_tg_body"
+	fi
+
+	# STYLE=code wraps the line in an inline code span. That is the only way to
+	# get coloured *text*, and it only works on some clients — see DESIGN.md.
+	# It stays a single inline line everywhere, which is why a fenced block was
+	# not chosen despite colouring more strongly.
+	if [ "$STYLE" = code ]; then
+		TAG="\`$TAG\`"
 	fi
 	return 0
 }

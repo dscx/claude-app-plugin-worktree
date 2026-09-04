@@ -45,31 +45,48 @@ desktop-app assistant message and reading the result off the screen.
 
 The app carries `sanitizeHtml` with a tag allowlist, and inline style does not survive it.
 
-**Round two — markdown-native colour.** Round one only proved that *our* markup is removed,
-not that the renderer paints nothing. The app bundles **Shiki**, which colours code by
-emitting inline styles of its own, downstream of the sanitiser — so it was reasonable to
-expect a fenced block or an inline code span to arrive coloured. Every one of these came
-back with no colour on the text at all:
+**Round two — markdown-native colour, and it depends on the client.** Round one only proved
+that *our* markup is removed, not that the renderer paints nothing. It does paint — but not
+everywhere. Same message, read on two clients:
 
-| Candidate | Result |
-| --- | --- |
-| inline code span | no colour |
-| ` ```diff ` with a `-` line | no colour |
-| ` ```diff ` with a `+` line | no colour |
-| ` ```diff ` with a `!` line | no colour |
-| link | no colour |
-| blockquote | no colour |
+| Candidate | Desktop app | Mobile |
+| --- | --- | --- |
+| inline code span | **coloured** | no colour |
+| ` ```diff ` `-` / `+` / `!` lines | **coloured** | no colour |
+| link | **coloured** | no colour |
+| blockquote | no colour | no colour |
+| `<span style>` / `<font color>` | stripped | stripped |
+| 🟠 glyph | orange | orange |
 
-Shiki being in the bundle does not mean it runs on assistant message text in the Code tab.
-Do not reason from a library's presence to its use on a given surface — that was the wrong
-inference the second round existed to check.
+Two conclusions follow, and they set the defaults:
+
+1. **The glyph is the only colour that survives everywhere**, because it is carried by the
+   font rather than by the renderer. That is why `MARK` is the default mechanism and
+   `STYLE=plain` is the default style. A reader on mobile still gets a coloured marker.
+2. **`STYLE=code` is opt-in**, and it buys colour only on clients that paint markdown.
+
+`STYLE=code` uses an inline code span rather than a fenced ` ```diff ` block, even though a
+fence colours more strongly. A fence is a block element: it wraps a one-line footer in a
+box, on every client. On desktop you would at least be paying that for colour; on mobile you
+would pay it and get nothing. An inline code span stays a single inline line everywhere and
+degrades to a monospace pill, which is a much cheaper failure.
+
+The wider trap this whole exercise is a monument to: **a rendering result is a property of a
+client, not of "markdown".** Round one tested one client and concluded something about the
+format. Round two tested six constructs on that same client and concluded something about
+the product. Only round three — the same message on a second client — was actually
+measuring the thing that varies. Test the surfaces your users read on, and say which surface
+a result came from.
+
+Do not add a `COLOR` setting. You cannot choose the colour, only the construct; the theme
+decides what that construct is painted.
 
 ANSI escapes are a terminal mechanism and would render as literal noise. So the colour has
 to live in the font, which is what a coloured glyph is — and it degrades honestly, since a
 terminal without emoji fonts shows a box rather than a broken escape sequence. `MARK=option`
 exists for exactly that case.
 
-Do not add a `COLOR` setting. There is nothing for it to set.
+
 
 A coloured glyph is the one thing guaranteed to survive, because the colour is in the font
 rather than in any markup. It also degrades honestly: in a terminal without emoji fonts it
