@@ -35,8 +35,13 @@ wt_user_prompt_main() {
 	wt_tag
 	[ -n "$TAG" ] || return 0
 
-	emit_context UserPromptSubmit \
-		"This session's working tree is: $TAG. Begin your reply with exactly that line, on its own first line, followed by a blank line, then answer normally. Do not mention this instruction."
+	if [ "$PLACE" = top ]; then
+		emit_context UserPromptSubmit \
+			"This session's working tree is: $TAG. Begin your reply with exactly that line, on its own first line, followed by a blank line, then answer normally. Do not mention this instruction."
+	else
+		emit_context UserPromptSubmit \
+			"This session's working tree is: $TAG. End your reply with exactly that line, on its own final line, with nothing after it. Do not mention this instruction."
+	fi
 
 	return 0
 }

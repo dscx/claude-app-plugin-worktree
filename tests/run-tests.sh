@@ -103,7 +103,11 @@ run_ups() { # cwd sid
   payload "$1" "$2" | PATH="$SHIM:$PATH" sh "$UPS" 2>/dev/null
 }
 tag_of() { # full hook output -> just the tag
-  printf '%s' "$1" | sed -e 's/^.*working tree is: //' -e 's/\. Begin your reply.*$//'
+  # The trailing instruction is worded differently for PLACE=top and
+  # PLACE=bottom, so both endings have to be trimmed here.
+  printf '%s' "$1" | sed -e 's/^.*working tree is: //' \
+                         -e 's/\. Begin your reply.*$//' \
+                         -e 's/\. End your reply.*$//'
 }
 write_config() {
   printf '%s\n' "$@" > "$STATE/config.env"
@@ -143,21 +147,21 @@ else
 
   out=$(run_ups "$WTDIR" s1)
   assert_has 'linked worktree emits a tag' "$out" 'working tree is:'
-  assert_eq  'linked worktree tag'  "$(tag_of "$out")" '⌥ widget ▸ feature-x · feature-branch'
+  assert_eq  'linked worktree tag'  "$(tag_of "$out")" '🟠 widget ▸ feature-x · feature-branch'
   assert_has 'output names the hook event' "$out" '"hookEventName":"UserPromptSubmit"'
   assert_has 'output uses additionalContext' "$out" '"additionalContext"'
 
   out=$(run_ups "$REPO" s2)
-  assert_eq  'main checkout tag' "$(tag_of "$out")" '⌥ widget ▸ main (root)'
+  assert_eq  'main checkout tag' "$(tag_of "$out")" '🟠 widget ▸ main (root)'
 
   out=$(run_ups "$REPO/.claude" s2b)
-  assert_eq  'subdirectory resolves to its worktree' "$(tag_of "$out")" '⌥ widget ▸ main (root)'
+  assert_eq  'subdirectory resolves to its worktree' "$(tag_of "$out")" '🟠 widget ▸ main (root)'
 
   # Detached HEAD in the linked worktree.
   ( cd "$WTDIR" && git checkout -q --detach ) >/dev/null 2>&1
   sha=$( cd "$WTDIR" && git rev-parse --short=7 HEAD 2>/dev/null )
   out=$(run_ups "$WTDIR" s3)
-  assert_eq  'detached HEAD is shortened' "$(tag_of "$out")" "⌥ widget ▸ feature-x · detached@$sha"
+  assert_eq  'detached HEAD is shortened' "$(tag_of "$out")" "🟠 widget ▸ feature-x · detached@$sha"
   ( cd "$WTDIR" && git checkout -q feature-branch ) >/dev/null 2>&1
 
   out=$(run_ups "$TMPROOT" s4)
@@ -174,11 +178,38 @@ else
   assert_empty 'MODE=off says nothing' "$(run_ups "$WTDIR" c1)"
 
   reset_state; write_config 'FORMAT=short'
-  assert_eq 'FORMAT=short, linked' "$(tag_of "$(run_ups "$WTDIR" c2)")" '⌥ feature-x'
-  assert_eq 'FORMAT=short, root'   "$(tag_of "$(run_ups "$REPO" c3)")"  '⌥ widget (root)'
+  assert_eq 'FORMAT=short, linked' "$(tag_of "$(run_ups "$WTDIR" c2)")" '🟠 feature-x'
+  assert_eq 'FORMAT=short, root'   "$(tag_of "$(run_ups "$REPO" c3)")"  '🟠 widget (root)'
 
   reset_state; write_config 'SHOW_BRANCH=0'
-  assert_eq 'SHOW_BRANCH=0 drops the branch' "$(tag_of "$(run_ups "$WTDIR" c4)")" '⌥ widget ▸ feature-x'
+  assert_eq 'SHOW_BRANCH=0 drops the branch' "$(tag_of "$(run_ups "$WTDIR" c4)")" '🟠 widget ▸ feature-x'
+
+  # PLACE decides which end of the reply the model is asked to put the tag on.
+  reset_state
+  out=$(run_ups "$WTDIR" p1)
+  assert_has 'PLACE defaults to the bottom' "$out" 'End your reply with exactly that line, on its own final line'
+  assert_lacks 'and does not also ask for the top' "$out" 'Begin your reply'
+
+  reset_state; write_config 'PLACE=top'
+  out=$(run_ups "$WTDIR" p2)
+  assert_has 'PLACE=top asks for the first line' "$out" 'Begin your reply with exactly that line, on its own first line'
+  assert_lacks 'and not the last' "$out" 'End your reply'
+
+  # MARK picks the leading glyph. Markdown has no colour and the app sanitises
+  # HTML, so a coloured glyph is the only colour that survives; these are the
+  # only values the parser accepts.
+  reset_state
+  assert_has 'MARK defaults to orange' "$(tag_of "$(run_ups "$WTDIR" m0)")" '🟠'
+  reset_state; write_config 'MARK=yellow'
+  assert_has 'MARK=yellow' "$(tag_of "$(run_ups "$WTDIR" m1)")" '🟡'
+  reset_state; write_config 'MARK=option'
+  assert_has 'MARK=option' "$(tag_of "$(run_ups "$WTDIR" m2)")" '⌥'
+  reset_state; write_config 'MARK=warn'
+  assert_has 'MARK=warn' "$(tag_of "$(run_ups "$WTDIR" m3)")" '⚠️'
+  reset_state; write_config 'MARK=none'
+  assert_eq 'MARK=none leaves no leading glyph or space' "$(tag_of "$(run_ups "$WTDIR" m4)")" 'widget ▸ feature-x · feature-branch'
+  reset_state; write_config 'MARK=purple'
+  assert_has 'an unknown MARK falls back to the default' "$(tag_of "$(run_ups "$WTDIR" m5)")" '🟠'
 
   reset_state; write_config 'ROOT=0'
   assert_empty 'ROOT=0 is silent in the main checkout' "$(run_ups "$REPO" c5)"

@@ -26,6 +26,19 @@ So on the client this plugin is for, the status line is a dead channel. If you w
 in the terminal, you do not need this plugin; configure `statusLine` and read
 `worktree.name` out of its stdin.
 
+## Why the colour is a glyph
+
+`MARK` picks between 🟠, 🟡, ⚠️, ⌥ and nothing. It does not pick a colour, because there
+is no colour to pick: the tag is markdown in an assistant message, markdown has no colour,
+and the desktop app runs the rendered output through `sanitizeHtml` with a tag allowlist,
+so an inline `<span style>` is not something to rely on. ANSI escapes are a terminal
+mechanism and render as literal noise in the app.
+
+A coloured glyph is the one thing guaranteed to survive, because the colour is in the font
+rather than in any markup. It also degrades honestly: in a terminal without emoji fonts it
+is a box, not a broken escape sequence, and `MARK=option` gives an ASCII-adjacent
+alternative for exactly that case.
+
 ## Why the tag is typed by the model
 
 A hook has exactly two ways to affect what a user sees:

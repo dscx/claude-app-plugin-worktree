@@ -30,17 +30,33 @@ WT_G1='"de''cision"'
 WT_G2='"permission''Decision"'
 WT_G3='"con''tinue"'
 
-# The tag's leading glyph, and the separators between its parts.
-WT_MARK='⌥'
+# The separators between the tag's parts. The leading glyph is chosen by the
+# MARK setting, resolved in wt_init.
 WT_SEP='▸'
 WT_DOT='·'
+
+# Markdown has no colour, and the desktop app's renderer sanitises HTML, so a
+# coloured *glyph* is the only colour that is guaranteed to survive. These are
+# the presets MARK selects between; the config parser is a strict allowlist by
+# design and never takes an arbitrary string.
+wt_mark_glyph() {
+	case "$MARK" in
+		orange) WT_MARK='🟠' ;;
+		yellow) WT_MARK='🟡' ;;
+		warn)   WT_MARK='⚠️' ;;
+		option) WT_MARK='⌥' ;;
+		none)   WT_MARK='' ;;
+		*)      WT_MARK='🟠' ;;
+	esac
+	return 0
+}
 
 # ---------------------------------------------------------------------------
 # wt_init — umask, state dir, config
 # ---------------------------------------------------------------------------
 wt_load_config() {
 	# Strict allowlist. Not a parser: each accepted line must match one of the
-	# eight legal KEY=value pairs exactly. Anything else — unknown keys, shell
+	# fifteen legal KEY=value pairs exactly. Anything else — unknown keys, shell
 	# metacharacters, command substitution, a key with an illegal value — falls
 	# through to the ignore branch. There is no eval and no sourcing.
 	#
@@ -68,6 +84,10 @@ wt_load_config() {
 					SHOW_BRANCH=${_cfg_ln#SHOW_BRANCH=} ;;
 				ROOT=0|ROOT=1)
 					ROOT=${_cfg_ln#ROOT=} ;;
+				PLACE=bottom|PLACE=top)
+					PLACE=${_cfg_ln#PLACE=} ;;
+				MARK=orange|MARK=yellow|MARK=warn|MARK=option|MARK=none)
+					MARK=${_cfg_ln#MARK=} ;;
 				*)
 					: ;;
 			esac
@@ -82,6 +102,8 @@ wt_init() {
 	FORMAT=full
 	SHOW_BRANCH=1
 	ROOT=1
+	PLACE=bottom
+	MARK=orange
 	STATE_DIR="${CLAUDE_WORKTREE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-worktree}"
 	SESS_DIR="$STATE_DIR/sessions"
 	WT_CONFIG="$STATE_DIR/config.env"
@@ -90,6 +112,7 @@ wt_init() {
 		WT_JQ=1
 	fi
 	wt_load_config
+	wt_mark_glyph
 	wt_prepare_payload
 	return 0
 }
@@ -653,9 +676,12 @@ wt_locate() {
 # ---------------------------------------------------------------------------
 # wt_tag -> TAG   the single line the model is asked to print
 #
-# Linked worktree:  ⌥ repo ▸ worktree · branch
-# Main checkout:    ⌥ repo ▸ branch (root)
+# Linked worktree:  🟠 repo ▸ worktree · branch
+# Main checkout:    🟠 repo ▸ branch (root)
 # Outside a repo:   empty, and the hook says nothing at all.
+#
+# The leading glyph comes from MARK and may be empty (MARK=none), which is why
+# the body is built first and the mark prefixed only if there is one.
 # ---------------------------------------------------------------------------
 wt_tag() {
 	TAG=""
@@ -666,22 +692,29 @@ wt_tag() {
 	wt_clamp "$WT_BRANCH" 64; _tg_b=$CL
 	[ "$SHOW_BRANCH" = 1 ] || _tg_b=""
 
+	_tg_body=""
 	if [ "$WT_LINKED" = true ]; then
 		if [ "$FORMAT" = short ]; then
-			TAG="$WT_MARK $_tg_n"
+			_tg_body="$_tg_n"
 		elif [ -n "$_tg_b" ]; then
-			TAG="$WT_MARK $_tg_r $WT_SEP $_tg_n $WT_DOT $_tg_b"
+			_tg_body="$_tg_r $WT_SEP $_tg_n $WT_DOT $_tg_b"
 		else
-			TAG="$WT_MARK $_tg_r $WT_SEP $_tg_n"
+			_tg_body="$_tg_r $WT_SEP $_tg_n"
 		fi
-		return 0
+	else
+		[ "$ROOT" = 1 ] || return 0
+		if [ "$FORMAT" = short ] || [ -z "$_tg_b" ]; then
+			_tg_body="$_tg_r (root)"
+		else
+			_tg_body="$_tg_r $WT_SEP $_tg_b (root)"
+		fi
 	fi
 
-	[ "$ROOT" = 1 ] || return 0
-	if [ "$FORMAT" = short ] || [ -z "$_tg_b" ]; then
-		TAG="$WT_MARK $_tg_r (root)"
+	[ -n "$_tg_body" ] || return 0
+	if [ -n "$WT_MARK" ]; then
+		TAG="$WT_MARK $_tg_body"
 	else
-		TAG="$WT_MARK $_tg_r $WT_SEP $_tg_b (root)"
+		TAG="$_tg_body"
 	fi
 	return 0
 }

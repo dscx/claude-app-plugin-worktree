@@ -28,9 +28,11 @@ wt_session_start_main() {
 	if [ ! -e "$WT_CONFIG" ]; then
 		{
 			printf '%s\n' '# claude-worktree configuration.'
-			printf '%s\n' '# Only these four keys with these exact values are read.'
+			printf '%s\n' '# Only these six keys with these exact values are read.'
 			printf '%s\n' '# Anything else on a line is ignored, not evaluated.'
 			printf '%s\n' 'MODE=inline'
+			printf '%s\n' 'PLACE=bottom'
+			printf '%s\n' 'MARK=orange'
 			printf '%s\n' 'FORMAT=full'
 			printf '%s\n' 'SHOW_BRANCH=1'
 			printf '%s\n' 'ROOT=1'

@@ -5,16 +5,16 @@ worktrees per repository — one per feature, one per agent, one per half-finish
 then two chats look identical while pointing at completely different working copies, and
 the only way to tell them apart is to ask.
 
-This plugin puts the answer at the top of every reply:
+This plugin puts the answer on the last line of every reply:
 
 ```
-⌥ atlas ▸ search-rewrite · worktree-search-rewrite
+🟠 atlas ▸ search-rewrite · worktree-search-rewrite
 ```
 
 Repository, worktree, branch. In the main checkout it says so instead:
 
 ```
-⌥ atlas ▸ main (root)
+🟠 atlas ▸ main (root)
 ```
 
 ## Install
@@ -79,7 +79,9 @@ By default that is `~/.claude/claude-worktree/config.env`, written on first run.
 | Key | Values | Default | Meaning |
 | --- | --- | --- | --- |
 | `MODE` | `inline`, `off` | `inline` | `off` disables the tag entirely without uninstalling the plugin. |
-| `FORMAT` | `full`, `short` | `full` | `full` is `⌥ repo ▸ worktree · branch`; `short` is just `⌥ worktree`. |
+| `PLACE` | `bottom`, `top` | `bottom` | Which end of the reply the tag goes on. |
+| `MARK` | `orange`, `yellow`, `warn`, `option`, `none` | `orange` | The leading glyph: 🟠, 🟡, ⚠️, ⌥, or none at all. |
+| `FORMAT` | `full`, `short` | `full` | `full` is `🟠 repo ▸ worktree · branch`; `short` is just `🟠 worktree`. |
 | `SHOW_BRANCH` | `1`, `0` | `1` | Include the branch. Worth turning off when your worktree names already encode the branch. |
 | `ROOT` | `1`, `0` | `1` | Tag the main checkout too. Set `0` and the tag appears **only** when you are in a linked worktree, so its presence is itself the signal. |
 
@@ -92,9 +94,9 @@ Two environment variables matter:
 
 | Situation | Tag |
 | --- | --- |
-| Linked worktree | `⌥ atlas ▸ search-rewrite · worktree-search-rewrite` |
-| Main checkout | `⌥ atlas ▸ main (root)` |
-| Detached HEAD | `⌥ atlas ▸ search-rewrite · detached@b30d649` |
+| Linked worktree | `🟠 atlas ▸ search-rewrite · worktree-search-rewrite` |
+| Main checkout | `🟠 atlas ▸ main (root)` |
+| Detached HEAD | `🟠 atlas ▸ search-rewrite · detached@b30d649` |
 | Not a git repository | nothing at all |
 
 Both kinds of worktree are covered: the ones Claude Code creates under
@@ -118,7 +120,13 @@ branch is read straight out of `HEAD`, which is one short line. A 256 KB prompt 
 - **The tag is model-typed.** See "What you'll actually see". Exact in content, best-effort
   in appearance. Do not build anything on its presence.
 - **One tag per turn.** `UserPromptSubmit` fires once per prompt. If the assistant sends
-  several messages in a turn, only the first is asked to carry the tag.
+  several messages in a turn, only one is asked to carry the tag.
+- **The colour is a glyph, not text.** Markdown has no colour and the desktop app
+  sanitises HTML, so `MARK` selects a coloured *character*. There is no way for a hook to
+  set the colour of the surrounding text.
+- **`PLACE=bottom` competes with anything else that wants the last line.** If you also run
+  `claude-timestamps` in `MODE=inline`, it asks for a stamp on the final line too, and the
+  two instructions will fight. Put one of them on `top`.
 - **Submodules report the submodule.** git's answer for a submodule working tree is the
   submodule, so that is what you get. That is usually what you wanted.
 - **Nothing is logged.** The plugin stores one cache line per session — four absolute
