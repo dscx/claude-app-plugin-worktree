@@ -43,6 +43,13 @@ wt_mark_glyph() {
 	case "$MARK" in
 		orange) WT_MARK='🟠' ;;
 		yellow) WT_MARK='🟡' ;;
+		red)    WT_MARK='🔴' ;;
+		green)  WT_MARK='🟢' ;;
+		blue)   WT_MARK='🔵' ;;
+		purple) WT_MARK='🟣' ;;
+		brown)  WT_MARK='🟤' ;;
+		white)  WT_MARK='⚪' ;;
+		black)  WT_MARK='⚫' ;;
 		warn)   WT_MARK='⚠️' ;;
 		option) WT_MARK='⌥' ;;
 		none)   WT_MARK='' ;;
@@ -56,7 +63,7 @@ wt_mark_glyph() {
 # ---------------------------------------------------------------------------
 wt_load_config() {
 	# Strict allowlist. Not a parser: each accepted line must match one of the
-	# seventeen legal KEY=value pairs exactly. Anything else — unknown keys, shell
+	# twenty-five legal KEY=value pairs exactly. Anything else — unknown keys, shell
 	# metacharacters, command substitution, a key with an illegal value — falls
 	# through to the ignore branch. There is no eval and no sourcing.
 	#
@@ -86,7 +93,7 @@ wt_load_config() {
 					ROOT=${_cfg_ln#ROOT=} ;;
 				PLACE=bottom|PLACE=top)
 					PLACE=${_cfg_ln#PLACE=} ;;
-				MARK=orange|MARK=yellow|MARK=warn|MARK=option|MARK=none)
+				MARK=orange|MARK=yellow|MARK=red|MARK=green|MARK=blue|MARK=purple|MARK=brown|MARK=white|MARK=black|MARK=warn|MARK=option|MARK=none)
 					MARK=${_cfg_ln#MARK=} ;;
 				STYLE=plain|STYLE=code)
 					STYLE=${_cfg_ln#STYLE=} ;;

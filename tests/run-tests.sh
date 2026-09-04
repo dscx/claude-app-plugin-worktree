@@ -200,15 +200,21 @@ else
   # only values the parser accepts.
   reset_state
   assert_has 'MARK defaults to orange' "$(tag_of "$(run_ups "$WTDIR" m0)")" '🟠'
-  reset_state; write_config 'MARK=yellow'
-  assert_has 'MARK=yellow' "$(tag_of "$(run_ups "$WTDIR" m1)")" '🟡'
+  for pair in 'yellow 🟡' 'red 🔴' 'green 🟢' 'blue 🔵' 'purple 🟣' 'brown 🟤' 'white ⚪' 'black ⚫'; do
+    name=${pair%% *}
+    glyph=${pair#* }
+    reset_state; write_config "MARK=$name"
+    assert_has "MARK=$name renders $glyph" "$(tag_of "$(run_ups "$WTDIR" "m-$name")")" "$glyph"
+  done
   reset_state; write_config 'MARK=option'
   assert_has 'MARK=option' "$(tag_of "$(run_ups "$WTDIR" m2)")" '⌥'
   reset_state; write_config 'MARK=warn'
   assert_has 'MARK=warn' "$(tag_of "$(run_ups "$WTDIR" m3)")" '⚠️'
   reset_state; write_config 'MARK=none'
   assert_eq 'MARK=none leaves no leading glyph or space' "$(tag_of "$(run_ups "$WTDIR" m4)")" 'widget ▸ feature-x · feature-branch'
-  reset_state; write_config 'MARK=purple'
+  # Deliberately not a colour name, so adding real colours can never make this
+  # fixture valid again — which is exactly what happened when it said 'purple'.
+  reset_state; write_config 'MARK=notacolour'
   assert_has 'an unknown MARK falls back to the default' "$(tag_of "$(run_ups "$WTDIR" m5)")" '🟠'
 
   # STYLE=code wraps the tag in an inline code span. It is the only route to

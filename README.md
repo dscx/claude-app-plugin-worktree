@@ -80,7 +80,7 @@ By default that is `~/.claude/claude-worktree/config.env`, written on first run.
 | --- | --- | --- | --- |
 | `MODE` | `inline`, `off` | `inline` | `off` disables the tag entirely without uninstalling the plugin. |
 | `PLACE` | `bottom`, `top` | `bottom` | Which end of the reply the tag goes on. |
-| `MARK` | `orange`, `yellow`, `warn`, `option`, `none` | `orange` | The leading glyph: 🟠, 🟡, ⚠️, ⌥, or none at all. |
+| `MARK` | `orange`, `yellow`, `red`, `green`, `blue`, `purple`, `brown`, `white`, `black`, `warn`, `option`, `none` | `orange` | The leading glyph — see [Changing the colour](#changing-the-colour). |
 | `STYLE` | `plain`, `code` | `plain` | `code` wraps the tag in an inline code span, which colours the **text** — but only on clients that paint markdown. See below. |
 | `FORMAT` | `full`, `short` | `full` | `full` is `🟠 repo ▸ worktree · branch`; `short` is just `🟠 worktree`. |
 | `SHOW_BRANCH` | `1`, `0` | `1` | Include the branch. Worth turning off when your worktree names already encode the branch. |
@@ -105,6 +105,8 @@ is a repository called `atlas` with a linked worktree `search-rewrite` on branch
 | `FORMAT=short` | 🟠 search-rewrite |
 | `SHOW_BRANCH=0` | 🟠 atlas ▸ search-rewrite |
 | `MARK=yellow` | 🟡 atlas ▸ search-rewrite · worktree-search-rewrite |
+| `MARK=red` | 🔴 atlas ▸ search-rewrite · worktree-search-rewrite |
+| `MARK=blue` | 🔵 atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=warn` | ⚠️ atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=option` | ⌥ atlas ▸ search-rewrite · worktree-search-rewrite |
 | `MARK=none` | atlas ▸ search-rewrite · worktree-search-rewrite |
@@ -121,6 +123,26 @@ is a repository called `atlas` with a linked worktree `search-rewrite` on branch
 | `ROOT=0` | *(nothing)* |
 
 `PLACE` does not change the text, only which end of the reply it lands on.
+
+### Changing the colour
+
+One line, and it takes effect on your next prompt — no restart:
+
+```bash
+sed -i '' 's/^MARK=.*/MARK=blue/' ~/.claude/claude-worktree/config.env   # macOS
+sed -i    's/^MARK=.*/MARK=blue/' ~/.claude/claude-worktree/config.env   # GNU
+```
+
+| `MARK` | | `MARK` | | `MARK` | |
+| --- | --- | --- | --- | --- | --- |
+| `orange` | 🟠 | `green` | 🟢 | `brown` | 🟤 |
+| `yellow` | 🟡 | `blue` | 🔵 | `white` | ⚪ |
+| `red` | 🔴 | `purple` | 🟣 | `black` | ⚫ |
+| `warn` | ⚠️ | `option` | ⌥ | `none` | *(no glyph)* |
+
+`white` and `black` are the two to think about: each vanishes against one theme, so pick
+them only if you keep a single appearance. Every other value reads on both. An unrecognised
+value falls back to `orange` rather than printing nothing.
 
 ### Colour, and which client you read on
 
