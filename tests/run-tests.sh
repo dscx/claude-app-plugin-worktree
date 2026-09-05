@@ -237,6 +237,12 @@ else
   assert_has 'STYLE=diff-warn uses the ! prefix' "$(tag_of "$(run_ups "$WTDIR" y0c)")" '! 🟠 widget'
   reset_state; write_config 'STYLE=plain'
   assert_lacks 'STYLE=plain has no backtick at all' "$(tag_of "$(run_ups "$WTDIR" y0d)")" '`'
+  reset_state; write_config 'STYLE=json'
+  out=$(tag_of "$(run_ups "$WTDIR" y0e)")
+  assert_has 'STYLE=json opens a json fence' "$out" '```json'
+  assert_has 'STYLE=json quotes the tag' "$out" '\"🟠 widget ▸ feature-x · feature-branch\"'
+  reset_state; write_config 'STYLE=json' 'MARK=none'
+  assert_has 'STYLE=json with MARK=none' "$(tag_of "$(run_ups "$WTDIR" y0f)")" '\"widget ▸ feature-x · feature-branch\"'
   reset_state; write_config 'STYLE=code'
   assert_eq 'STYLE=code wraps the whole tag' "$(tag_of "$(run_ups "$WTDIR" y1)")" '`🟠 widget ▸ feature-x · feature-branch`'
   reset_state; write_config 'STYLE=code' 'MARK=none'
@@ -426,6 +432,28 @@ else
     git commit -q -m first
   ) >/dev/null 2>&1
   if [ -d "$odd/.git" ]; then
+    # STYLE=json puts the path inside a JSON string literal, so a quote or a
+    # backslash in a directory name must be escaped or the block renders broken.
+    reset_state; write_config 'STYLE=json'
+    jraw=$(run_ups "$odd" o2j)
+    if command -v node >/dev/null 2>&1; then
+      # Decode the hook envelope, pull the middle line out of the fence, and
+      # parse that line as JSON — which is what the block claims to be.
+      if printf '%s' "$jraw" | node -e '
+        let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+          const ctx = JSON.parse(s).hookSpecificOutput.additionalContext;
+          const m = ctx.match(/```json\n([\s\S]*?)\n```/);
+          if (!m) { process.exit(1); }
+          JSON.parse(m[1]);
+        })' 2>/dev/null; then
+        ok 'STYLE=json escapes quotes in a path'
+      else
+        bad 'STYLE=json escapes quotes in a path' "$jraw"
+      fi
+    else
+      skip 'node unavailable for the json-escape check'
+    fi
+    reset_state
     out=$(run_ups "$odd" o2)
     if [ -z "$out" ]; then
       skip 'awkward repository name produced no tag'

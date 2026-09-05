@@ -65,7 +65,7 @@ wt_mark_glyph() {
 # ---------------------------------------------------------------------------
 wt_load_config() {
 	# Strict allowlist. Not a parser: each accepted line must match one of the
-	# twenty-eight legal KEY=value pairs exactly. Anything else — unknown keys, shell
+	# twenty-nine legal KEY=value pairs exactly. Anything else — unknown keys, shell
 	# metacharacters, command substitution, a key with an illegal value — falls
 	# through to the ignore branch. There is no eval and no sourcing.
 	#
@@ -97,7 +97,7 @@ wt_load_config() {
 					PLACE=${_cfg_ln#PLACE=} ;;
 				MARK=orange|MARK=yellow|MARK=red|MARK=green|MARK=blue|MARK=purple|MARK=brown|MARK=white|MARK=black|MARK=warn|MARK=option|MARK=none)
 					MARK=${_cfg_ln#MARK=} ;;
-				STYLE=plain|STYLE=code|STYLE=diff-add|STYLE=diff-del|STYLE=diff-warn)
+				STYLE=plain|STYLE=code|STYLE=diff-add|STYLE=diff-del|STYLE=diff-warn|STYLE=json)
 					STYLE=${_cfg_ln#STYLE=} ;;
 				*)
 					: ;;
@@ -746,6 +746,14 @@ wt_tag() {
 			TAG="${WT_FENCE}diff${WT_NL}- ${TAG}${WT_NL}${WT_FENCE}" ;;
 		diff-warn)
 			TAG="${WT_FENCE}diff${WT_NL}! ${TAG}${WT_NL}${WT_FENCE}" ;;
+		json)
+			# A quoted string in a json fence. The body is escaped for JSON
+			# first: a repository directory may legitimately hold a quote or a
+			# backslash, and an unescaped one would render as broken JSON in
+			# the very block that exists to look tidy.
+			wt_replace "$TAG" "$WT_BS" "$WT_BS$WT_BS"
+			wt_replace "$RP" "$WT_Q" "$WT_BS$WT_Q"
+			TAG="${WT_FENCE}json${WT_NL}${WT_Q}${RP}${WT_Q}${WT_NL}${WT_FENCE}" ;;
 		*)
 			: ;;
 	esac

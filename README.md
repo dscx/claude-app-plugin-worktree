@@ -83,7 +83,7 @@ By default that is `~/.claude/claude-worktree/config.env`, written on first run.
 | `MODE` | `inline`, `off` | `inline` | `off` disables the tag entirely without uninstalling the plugin. |
 | `PLACE` | `bottom`, `top` | `bottom` | Which end of the reply the tag goes on. |
 | `MARK` | `orange`, `yellow`, `red`, `green`, `blue`, `purple`, `brown`, `white`, `black`, `warn`, `option`, `none` | `orange` | The leading glyph — see [Changing the colour](#changing-the-colour). |
-| `STYLE` | `diff-add`, `diff-del`, `diff-warn`, `code`, `plain` | `diff-add` | How the tag is wrapped, which is the only lever on **text** colour. See [Colour](#colour-and-which-client-you-read-on). |
+| `STYLE` | `diff-add`, `diff-del`, `diff-warn`, `json`, `code`, `plain` | `diff-add` | How the tag is wrapped, which is the only lever on **text** colour. See [Colour](#colour-and-which-client-you-read-on). |
 | `FORMAT` | `full`, `short` | `full` | `full` is `🟠 repo ▸ worktree · branch`; `short` is just `🟠 worktree`. |
 | `SHOW_BRANCH` | `1`, `0` | `1` | Include the branch. Worth turning off when your worktree names already encode the branch. |
 | `ROOT` | `1`, `0` | `1` | Tag the main checkout too. Set `0` and the tag appears **only** when you are in a linked worktree, so its presence is itself the signal. |
@@ -166,6 +166,7 @@ it.** `STYLE` chooses the construct:
 | `diff-add` *(default)* | ` ```diff ` block, `+` prefix | the theme's *added* colour | block, 3 lines |
 | `diff-del` | ` ```diff ` block, `-` prefix | the theme's *removed* colour | block, 3 lines |
 | `diff-warn` | ` ```diff ` block, `!` prefix | the theme's *changed* colour | block, 3 lines |
+| `json` | ` ```json ` block, quoted string | the theme's *string* colour | block, 3 lines |
 | `code` | inline code span | the theme's inline-code colour | inline, 1 line |
 | `plain` | bare text | none | inline, 1 line |
 
@@ -178,6 +179,11 @@ does not highlight, you pay the box and get no colour at all. And a `+` prefix r
 *added* and `-` as *removed*, which is diff vocabulary being borrowed for a status line; if
 that mismatch bothers you, `diff-warn` carries less meaning, and `code` or `plain` carry
 none.
+
+**What `STYLE` cannot do is change the background.** The box behind a fenced block is your
+theme's, and no markdown a hook emits reaches it — a light theme gives a pale box in every
+style here. If you want the dark-on-light contrast of a dark theme, the only route is the
+app's appearance setting, not this plugin.
 
 The glyph is unaffected by all of this. `MARK` is coloured by the font, so it survives on
 every client regardless of `STYLE` — which is why the plugin still leads with it.
